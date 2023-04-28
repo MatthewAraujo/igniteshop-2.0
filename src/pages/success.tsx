@@ -1,3 +1,4 @@
+import { IProduct } from "@/contexts/CartContext";
 import { stripe } from "@/lib/stripe";
 import { GetServerSideProps } from "next";
 import Head from "next/head";
@@ -6,12 +7,12 @@ import Link from "next/link";
 import Stripe from "stripe";
 interface SuccessProps {
   customerName: string;
-  product: {
-    name: string;
-    imageUrl: string;
-  };
+  productsImages: string[];
 }
-export default function Success({ customerName, product }: SuccessProps) {
+export default function Success({
+  customerName,
+  productsImages,
+}: SuccessProps) {
   return (
     <>
       <Head>
@@ -19,14 +20,20 @@ export default function Success({ customerName, product }: SuccessProps) {
         <meta name="robots" content="noindex" />
       </Head>
       <main className="mx-auto flex h-[656px] flex-col items-center justify-center text-center">
-        <div className="flex h-[140px] w-full max-w-[140px] items-center justify-center rounded-full bg-gradient-to-r  from-[#1ea483] to-[#7465d4] p-1">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            width={120}
-            height={110}
-            className="object-cover "
-          />
+        <div className=" flex w-full items-center justify-center">
+          {productsImages.map((image, i) => (
+            <div className="relative ml-[-60px] flex h-[140px] w-full max-w-[140px] items-center justify-center gap-8 rounded-full bg-gradient-to-r  from-[#1ea483] to-[#7465d4] p-1">
+              <div key={i} className=" relative flex items-center">
+                <Image
+                  src={image}
+                  alt={image}
+                  width={120}
+                  height={110}
+                  className="object-cover "
+                />
+              </div>
+            </div>
+          ))}
         </div>
         <h1 className="text-3xl text-gray100">Compra Efetuada</h1>
         <p className="my-8 max-w-[560px] text-2xl text-gray300 ">
@@ -64,15 +71,15 @@ export const getServerSideProps: GetServerSideProps = async ({
   });
 
   const customerName = session.customer_details.name;
-  const product = session.line_items.data[0].price.product as Stripe.Product;
+  const productsImages = session.line_items.data.map((lineItem) => {
+    const product = lineItem.price.product as Stripe.Product;
+    return product.images[0];
+  });
 
   return {
     props: {
       customerName,
-      product: {
-        name: product.name,
-        imageUrl: product.images[0],
-      },
+      productsImages,
     },
   };
 };

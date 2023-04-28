@@ -1,40 +1,20 @@
 import { stripe } from "@/lib/stripe";
-import axios from "axios";
 import { GetStaticPaths, GetStaticProps } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { useState } from "react";
 import Stripe from "stripe";
 import { Layout } from "../../lib/layout";
+import { useCart } from "@/hooks/useCart";
+import { IProduct } from "@/contexts/CartContext";
 
 interface ProductProps {
-  product: {
-    id: string;
-    name: string;
-    description: string;
-    imageUrl: string;
-    price: string;
-    defaultPriceId: string;
-  };
+  product: IProduct;
 }
 
 export default function Product({ product }: ProductProps) {
-  const [isCreatingCheckoutSession, setIsCreatingCheckoutSession] =
-    useState(false);
+  const { addToCart, checkIfItemAlreadyExists } = useCart();
 
-  async function handleBuyProduct() {
-    try {
-      setIsCreatingCheckoutSession(true);
-      const response = await axios.post("/api/checkout", {
-        priceId: product.defaultPriceId,
-      });
-      const { checkoutUrl } = response.data;
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      setIsCreatingCheckoutSession(false);
-      alert(err.message);
-    }
-  }
+  const itemAlreadyExists = checkIfItemAlreadyExists(product.id);
 
   return (
     <>
@@ -64,11 +44,11 @@ export default function Product({ product }: ProductProps) {
               {product.description}
             </p>
             <button
-              onClick={handleBuyProduct}
-              disabled={isCreatingCheckoutSession}
+              onClick={() => addToCart(product)}
+              disabled={itemAlreadyExists}
               className="my-auto rounded-lg bg-green500 p-5 font-bold text-white hover:bg-green300 hover:transition-all disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Colocar na sacola
+              {itemAlreadyExists ? "Item ja na sacola" : "Colocar na sacola"}
             </button>
           </div>
         </main>
@@ -107,6 +87,7 @@ export const getStaticProps: GetStaticProps<any, { id: string }> = async ({
         }).format(price.unit_amount / 100),
         description: product.description,
         defaultPriceId: price.id,
+        numberPrice: price.unit_amount / 100,
       },
     },
     revalidate: 60 * 60 * 1, // 1 hours

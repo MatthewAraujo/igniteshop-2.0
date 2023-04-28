@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { KeenSliderPlugin, useKeenSlider } from "keen-slider/react";
+import { useKeenSlider } from "keen-slider/react";
 import "keen-slider/keen-slider.min.css";
 import { stripe } from "@/lib/stripe";
 import { GetStaticProps } from "next";
@@ -9,17 +9,15 @@ import Stripe from "stripe";
 import { ShoppingBag } from "@phosphor-icons/react";
 import Head from "next/head";
 import { WheelControls } from "../lib/sliderKeen";
+import { useCart } from "@/hooks/useCart";
+import { IProduct } from "@/contexts/CartContext";
 
 interface HomeProps {
-  products: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    price: string;
-  }[];
+  products: IProduct[];
 }
 
 export default function Home({ products }: HomeProps) {
+  const { addToCart, checkIfItemAlreadyExists } = useCart();
   WheelControls;
 
   const [sliderRef] = useKeenSlider<HTMLDivElement>(
@@ -68,7 +66,11 @@ export default function Home({ products }: HomeProps) {
                   </span>
                 </div>
                 <div>
-                  <button className=" rounded-md bg-green300 p-2 text-white">
+                  <button
+                    onClick={() => addToCart(product)}
+                    disabled={checkIfItemAlreadyExists(product.id)}
+                    className=" rounded-md bg-green300 p-2 text-white disabled:cursor-not-allowed disabled:bg-green500"
+                  >
                     <ShoppingBag size={32} />
                   </button>
                 </div>
@@ -95,6 +97,8 @@ export const getStaticProps: GetStaticProps = async () => {
         style: "currency",
         currency: "BRL",
       }).format(price.unit_amount / 100),
+      numberPrice: price.unit_amount / 100,
+      defaultPriceId: price.id,
     };
   });
 
